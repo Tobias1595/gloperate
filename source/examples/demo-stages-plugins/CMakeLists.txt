@@ -47,6 +47,7 @@ set(headers
     ${include_path}/DemoTextRenderingPipeline.h
     ${include_path}/DemoTransparencyAggregationPipeline.h
     ${include_path}/GlyphSequenceDemoStage.h
+    ${include_path}/IntegerVectorStage.h
     ${include_path}/LightTestPipeline.h
     ${include_path}/LightTestStage.h
     ${include_path}/MultiFramePostprocessingStage.h
@@ -56,6 +57,7 @@ set(headers
     ${include_path}/ShapeDemo.h
     ${include_path}/TransparencyRenderingPipeline.h
     ${include_path}/TransparentCirclesStage.h
+    ${include_path}/VectorStage.h
 )
 
 set(sources
@@ -68,6 +70,7 @@ set(sources
     ${source_path}/DemoTextRenderingPipeline.cpp
     ${source_path}/DemoTransparencyAggregationPipeline.cpp
     ${source_path}/GlyphSequenceDemoStage.cpp
+    ${source_path}/IntegerVectorStage.cpp
     ${source_path}/LightTestPipeline.cpp
     ${source_path}/LightTestStage.cpp
     ${source_path}/MultiFramePostprocessingStage.cpp
@@ -77,6 +80,7 @@ set(sources
     ${source_path}/ShapeDemo.cpp
     ${source_path}/TransparencyRenderingPipeline.cpp
     ${source_path}/TransparentCirclesStage.cpp
+    ${source_path}/VectorStage.cpp
 )
 
 # Group source files

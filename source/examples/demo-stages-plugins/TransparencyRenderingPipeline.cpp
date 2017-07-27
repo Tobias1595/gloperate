@@ -10,6 +10,7 @@
 #include <gloperate-glkernel/stages/NoiseKernelStage.h>
 
 #include "TransparentCirclesStage.h"
+#include "IntegerVectorStage.h"
 
 
 CPPEXPOSE_COMPONENT(TransparencyRenderingPipeline, gloperate::Stage)
@@ -23,11 +24,19 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
 , m_depthBufferStage(cppassist::make_unique<gloperate::TextureRenderTargetStage>(environment))
 , m_transparencyRenderStage(cppassist::make_unique<TransparentCirclesStage>(environment))
 {
+    auto transparencySizeStage = cppassist::make_unique<IntegerVectorStage>(environment);
+    transparencySizeStage->createInput("x") = 256;
+    transparencySizeStage->createInput("y") = 64; // TODO: pipe multiframe count into here
+
     addStage(m_transparencyKernelStage.get());
-    m_transparencyKernelStage->kernelSize.setValue(glm::ivec2(256, 256));
+    m_transparencyKernelStage->kernelSize << *transparencySizeStage->createOutput<glm::ivec2>("xy");
+
+    auto noiseSizeStage = cppassist::make_unique<IntegerVectorStage>(environment);
+    noiseSizeStage->createInput("xy") = glm::ivec2(64);
+    noiseSizeStage->createInput("z") = 64; // TODO: pipe multiframe count into here
 
     addStage(m_noiseKernelStage.get());
-    m_noiseKernelStage->dimensions.setValue(glm::ivec3(64, 64, 64));
+    m_noiseKernelStage->dimensions << *noiseSizeStage->createOutput<glm::ivec3>("xyz");
 
     addStage(m_depthBufferStage.get());
     m_depthBufferStage->size << canvasInterface.viewport;
@@ -46,6 +55,9 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
     m_transparencyRenderStage->createInput("Depth") << m_depthBufferStage->depthRenderTarget;
 
     *createOutput<gloperate::ColorRenderTarget *>("ColorOut") << *m_transparencyRenderStage->createOutput<gloperate::ColorRenderTarget *>("ColorOut");
+
+    addStage(std::move(transparencySizeStage));
+    addStage(std::move(noiseSizeStage));
 }
 
 TransparencyRenderingPipeline::~TransparencyRenderingPipeline()

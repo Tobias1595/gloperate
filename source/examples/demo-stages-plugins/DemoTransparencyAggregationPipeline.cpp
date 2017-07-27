@@ -22,9 +22,7 @@ DemoTransparencyAggregationPipeline::DemoTransparencyAggregationPipeline(glopera
     //m_transparencyPipeline->multiFrameCount << multiFrameCount;
 
     // Inputs
-    // Inputs
     *m_multiFramePipeline->canvasInterface.colorRenderTargetInput(0) << *createInput<gloperate::ColorRenderTarget *>("Color");
-
     m_multiFramePipeline->canvasInterface.viewport << canvasInterface.viewport;
     m_multiFramePipeline->canvasInterface.backgroundColor << canvasInterface.backgroundColor;
     m_multiFramePipeline->canvasInterface.frameCounter << canvasInterface.frameCounter;
