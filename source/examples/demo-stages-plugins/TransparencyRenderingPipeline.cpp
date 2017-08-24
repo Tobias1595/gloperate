@@ -38,12 +38,6 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
     addStage(m_transparencyKernelStage.get());
     m_transparencyKernelStage->kernelSize << *transparencySizeStage->createOutput<glm::ivec2>("xy");
 
-    auto noiseSizeStage = cppassist::make_unique<IntegerVectorStage>(environment);
-    noiseSizeStage->createInput("xy") = glm::ivec2(64);
-    noiseSizeStage->createInput("z") = 64; // TODO: pipe multiframe count into here
-
-    addStage(m_noiseKernelStage.get());
-    m_noiseKernelStage->dimensions << *noiseSizeStage->createOutput<glm::ivec3>("xyz");
     addStage(m_programStage.get());
     *m_programStage->createInput<cppassist::FilePath>("vertexShader")   = dataPath + "/gloperate/shaders/demos/transparency.vert";
     *m_programStage->createInput<cppassist::FilePath>("fragmentShader") = dataPath + "/gloperate/shaders/demos/transparency.frag";
@@ -70,7 +64,6 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
     *createOutput<gloperate::ColorRenderTarget *>("ColorOut") << *m_rasterizationStage->createOutput<gloperate::ColorRenderTarget *>("ColorOut");
 
     addStage(std::move(transparencySizeStage));
-    addStage(std::move(noiseSizeStage));
 }
 
 TransparencyRenderingPipeline::~TransparencyRenderingPipeline()
