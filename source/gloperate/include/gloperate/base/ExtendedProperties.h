@@ -10,6 +10,7 @@
 
 #include <cppexpose/typed/GetTyped.h>
 
+#include <gloperate/gloperate_export.h>
 #include <gloperate/base/Range.h>
 #include <gloperate/rendering/Color.h>
 
@@ -65,7 +66,7 @@ public:
 *    Spezialization for integer vector types
 */
 template <>
-class VectorPrefix<int>
+class GLOPERATE_API VectorPrefix<int>
 {
 public:
     static const std::string & getPrefix();
