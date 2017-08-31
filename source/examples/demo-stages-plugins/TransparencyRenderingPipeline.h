@@ -48,6 +48,11 @@ public:
     // Interfaces
     gloperate::CanvasInterface canvasInterface; ///< Interface for rendering into a viewer
 
+    // Inputs
+    Input<float>   redAlpha; ///< Alpha value of the red circle
+    Input<float> greenAlpha; ///< Alpha value of the green circle
+    Input<float>  blueAlpha; ///< Alpha value of the blue circle
+
 
 public:
     /**

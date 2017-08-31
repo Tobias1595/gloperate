@@ -32,6 +32,9 @@ void main()
     ivec2 transpIndex = ivec2(vec2(rand, alpha) * transpSize) + ivec2(currentFrame, 0);
     bool opaque = texelFetch(transparencyKernel, transpIndex % transpSize, 0).r > 0.5;
 
+    if (alpha == 1.0)
+        opaque = true;
+
     if (!opaque)
         discard;
 

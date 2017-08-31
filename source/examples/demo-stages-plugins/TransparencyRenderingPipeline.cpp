@@ -16,6 +16,7 @@
 #include <gloperate-glkernel/stages/TransparencyKernelStage.h>
 
 #include "IntegerVectorStage.h"
+#include "VectorStage.h"
 
 CPPEXPOSE_COMPONENT(TransparencyRenderingPipeline, gloperate::Stage)
 
@@ -23,6 +24,9 @@ CPPEXPOSE_COMPONENT(TransparencyRenderingPipeline, gloperate::Stage)
 TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environment * environment, const std::string & name)
 : Pipeline(environment, name)
 , canvasInterface(this)
+, redAlpha("redAlpha", this)
+, greenAlpha("greenAlpha", this)
+, blueAlpha("blueAlpha", this)
 , m_transparencyKernelStage(cppassist::make_unique<gloperate_glkernel::TransparencyKernelStage>(environment))
 , m_programStage(cppassist::make_unique<gloperate::ProgramStage>(environment))
 , m_clearStage(cppassist::make_unique<gloperate::ClearStage>(environment))
@@ -31,7 +35,7 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
 {
     auto dataPath = gloperate::dataPath();
 
-    auto transparencySizeStage = cppassist::make_unique<IntegerVectorStage>(environment);
+    auto transparencySizeStage = cppassist::make_unique<IntegerVectorStage>(environment, "TransparencySizeStage");
     transparencySizeStage->createInput("x") = 256;
     transparencySizeStage->createInput("y") = 64; // TODO: pipe multiframe count into here
 
@@ -42,12 +46,18 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
     *m_programStage->createInput<cppassist::FilePath>("vertexShader")   = dataPath + "/gloperate/shaders/demos/transparency.vert";
     *m_programStage->createInput<cppassist::FilePath>("fragmentShader") = dataPath + "/gloperate/shaders/demos/transparency.frag";
 
+    auto alphaValuesStage = cppassist::make_unique<VectorStage>(environment, "AlphaValuesStage");
+    alphaValuesStage->createInput("r") << redAlpha;
+    alphaValuesStage->createInput("g") << greenAlpha;
+    alphaValuesStage->createInput("b") << blueAlpha;
+
     addStage(m_renderPassStage.get());
     //m_renderPassStage->drawable will be set in onContextInit
     m_renderPassStage->program << m_programStage->program;
     m_renderPassStage->depthTest = false;
     m_renderPassStage->createInput("currentFrame") << canvasInterface.frameCounter;
     m_renderPassStage->createInput("timeDelta") << canvasInterface.timeDelta;
+    m_renderPassStage->createInput("alphaVals") << *alphaValuesStage->createOutput<glm::vec3>("rgb");
     m_renderPassStage->createInput("transparencyKernel") << m_transparencyKernelStage->texture;
 
     addStage(m_clearStage.get());
@@ -64,6 +74,7 @@ TransparencyRenderingPipeline::TransparencyRenderingPipeline(gloperate::Environm
     *createOutput<gloperate::ColorRenderTarget *>("ColorOut") << *m_rasterizationStage->createOutput<gloperate::ColorRenderTarget *>("ColorOut");
 
     addStage(std::move(transparencySizeStage));
+    addStage(std::move(alphaValuesStage));
 }
 
 TransparencyRenderingPipeline::~TransparencyRenderingPipeline()
@@ -72,8 +83,8 @@ TransparencyRenderingPipeline::~TransparencyRenderingPipeline()
 
 void TransparencyRenderingPipeline::onContextInit(gloperate::AbstractGLContext * context)
 {
-    using vertexData = std::tuple<glm::vec2, glm::vec2, glm::vec4>;
-    //                            position   uv         color
+    using vertexData = std::tuple<glm::vec2, glm::vec2, glm::vec3, int32_t>;
+    //                            position   uv         color      index
 
     m_drawable.reset(new gloperate::Drawable());
 
@@ -81,42 +92,45 @@ void TransparencyRenderingPipeline::onContextInit(gloperate::AbstractGLContext *
     // sorted from back to front to render correctly without depth buffer
     static const std::vector<vertexData> vertices {
         // blue, center at (0.2598, -0.15)
-        {{-0.2402f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 0.0f, 1.0f, 0.8f}},
-        {{-0.2402f, -0.65f}, {-1.0f, -1.0f}, {0.0f, 0.0f, 1.0f, 0.8f}},
-        {{ 0.7598f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 0.0f, 1.0f, 0.8f}},
-        {{ 0.7598f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 0.0f, 1.0f, 0.8f}},
-        {{ 0.7598f,  0.35f}, { 1.0f,  1.0f}, {0.0f, 0.0f, 1.0f, 0.8f}},
-        {{-0.2402f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 0.0f, 1.0f, 0.8f}},
+        {{-0.2402f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, 2},
+        {{-0.2402f, -0.65f}, {-1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, 2},
+        {{ 0.7598f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, 2},
+        {{ 0.7598f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, 2},
+        {{ 0.7598f,  0.35f}, { 1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, 2},
+        {{-0.2402f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 0.0f, 1.0f}, 2},
         // green, center at (-0.2598, -0.15)
-        {{-0.7598f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 1.0f, 0.0f, 0.5f}},
-        {{-0.7598f, -0.65f}, {-1.0f, -1.0f}, {0.0f, 1.0f, 0.0f, 0.5f}},
-        {{ 0.2402f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f, 0.5f}},
-        {{ 0.2402f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f, 0.5f}},
-        {{ 0.2402f,  0.35f}, { 1.0f,  1.0f}, {0.0f, 1.0f, 0.0f, 0.5f}},
-        {{-0.7598f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 1.0f, 0.0f, 0.5f}},
+        {{-0.7598f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 1.0f, 0.0f}, 1},
+        {{-0.7598f, -0.65f}, {-1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 1},
+        {{ 0.2402f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 1},
+        {{ 0.2402f, -0.65f}, { 1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 1},
+        {{ 0.2402f,  0.35f}, { 1.0f,  1.0f}, {0.0f, 1.0f, 0.0f}, 1},
+        {{-0.7598f,  0.35f}, {-1.0f,  1.0f}, {0.0f, 1.0f, 0.0f}, 1},
         // red, center at (0.0, 0.3)
-        {{-0.5f,  0.8f}, {-1.0f,  1.0f}, {1.0f, 0.0f, 0.0f, 0.3f}},
-        {{-0.5f, -0.2f}, {-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 0.3f}},
-        {{ 0.5f, -0.2f}, { 1.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 0.3f}},
-        {{ 0.5f, -0.2f}, { 1.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 0.3f}},
-        {{ 0.5f,  0.8f}, { 1.0f,  1.0f}, {1.0f, 0.0f, 0.0f, 0.3f}},
-        {{-0.5f,  0.8f}, {-1.0f,  1.0f}, {1.0f, 0.0f, 0.0f, 0.3f}},
+        {{-0.5f,  0.8f}, {-1.0f,  1.0f}, {1.0f, 0.0f, 0.0f}, 0},
+        {{-0.5f, -0.2f}, {-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, 0},
+        {{ 0.5f, -0.2f}, { 1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, 0},
+        {{ 0.5f, -0.2f}, { 1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, 0},
+        {{ 0.5f,  0.8f}, { 1.0f,  1.0f}, {1.0f, 0.0f, 0.0f}, 0},
+        {{-0.5f,  0.8f}, {-1.0f,  1.0f}, {1.0f, 0.0f, 0.0f}, 0},
     };
 
     globjects::Buffer * vertexBuffer = new globjects::Buffer;
     m_drawable->setBuffer(0, vertexBuffer);
     m_drawable->setData(0, vertices, gl::GL_STATIC_DRAW);
 
-    // std::tuples contain their data in reverse order!
     m_drawable->bindAttribute(0, 0);
     m_drawable->bindAttribute(1, 1);
     m_drawable->bindAttribute(2, 2);
+    m_drawable->bindAttribute(3, 3);
     m_drawable->setAttributeBindingBuffer(0, 0, 0, sizeof(vertexData));
     m_drawable->setAttributeBindingBuffer(1, 0, 0, sizeof(vertexData));
     m_drawable->setAttributeBindingBuffer(2, 0, 0, sizeof(vertexData));
-    m_drawable->setAttributeBindingFormat(0, 2, gl::GL_FLOAT, gl::GL_FALSE, sizeof(glm::vec4) + sizeof(glm::vec2));
-    m_drawable->setAttributeBindingFormat(1, 2, gl::GL_FLOAT, gl::GL_FALSE, sizeof(glm::vec4));
-    m_drawable->setAttributeBindingFormat(2, 4, gl::GL_FLOAT, gl::GL_FALSE, 0);
+    m_drawable->setAttributeBindingBuffer(3, 0, 0, sizeof(vertexData));
+    // std::tuples contain their data in reverse order!
+    m_drawable->setAttributeBindingFormat (0, 2, gl::GL_FLOAT, gl::GL_FALSE, sizeof(int32_t) + sizeof(glm::vec3) + sizeof(glm::vec2));
+    m_drawable->setAttributeBindingFormat (1, 2, gl::GL_FLOAT, gl::GL_FALSE, sizeof(int32_t) + sizeof(glm::vec3));
+    m_drawable->setAttributeBindingFormat (2, 3, gl::GL_FLOAT, gl::GL_FALSE, sizeof(int32_t));
+    m_drawable->setAttributeBindingFormatI(3, 1, gl::GL_INT  ,               0);
 
     m_drawable->enableAllAttributeBindings();
     m_drawable->setSize(vertices.size());

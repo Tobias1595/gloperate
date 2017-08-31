@@ -29,6 +29,10 @@ DemoMultiFrameAggregationPipeline::DemoMultiFrameAggregationPipeline(gloperate::
     m_multiFramePipeline->canvasInterface.timeDelta << canvasInterface.timeDelta;
     m_multiFramePipeline->multiFrameCount << multiFrameCount;
 
+    m_multiFramePipeline->createInput("redAlpha")   << *createInput("redAlpha"  , 0.3f);
+    m_multiFramePipeline->createInput("greenAlpha") << *createInput("greenAlpha", 0.5f);
+    m_multiFramePipeline->createInput("blueAlpha")  << *createInput("blueAlpha" , 0.7f);
+
     // Outputs
     *createOutput<gloperate::ColorRenderTarget *>("ColorOut") << *m_multiFramePipeline->canvasInterface.colorRenderTargetOutput(0);
 }
