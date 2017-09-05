@@ -19,7 +19,6 @@ DemoMultiFrameAggregationPipeline::DemoMultiFrameAggregationPipeline(gloperate::
     addStage(m_multiFramePipeline.get());
 
     m_multiFramePipeline->addStage(m_transparencyPipeline.get());
-    //m_transparencyPipeline->multiFrameCount << multiFrameCount;
 
     // Inputs
     *m_multiFramePipeline->canvasInterface.colorRenderTargetInput(0) << *createInput<gloperate::ColorRenderTarget *>("Color");
@@ -29,9 +28,15 @@ DemoMultiFrameAggregationPipeline::DemoMultiFrameAggregationPipeline(gloperate::
     m_multiFramePipeline->canvasInterface.timeDelta << canvasInterface.timeDelta;
     m_multiFramePipeline->multiFrameCount << multiFrameCount;
 
-    m_multiFramePipeline->createInput("redAlpha")   << *createInput("redAlpha"  , 0.3f);
-    m_multiFramePipeline->createInput("greenAlpha") << *createInput("greenAlpha", 0.5f);
-    m_multiFramePipeline->createInput("blueAlpha")  << *createInput("blueAlpha" , 0.7f);
+    auto redAlphaInput   = createInput("redAlpha"  , 0.3f);
+    auto greenAlphaInput = createInput("greenAlpha", 0.5f);
+    auto blueAlphaInput  = createInput("blueAlpha" , 0.7f);
+    m_transparencyPipeline->redAlpha   << *redAlphaInput;
+    m_transparencyPipeline->greenAlpha << *greenAlphaInput;
+    m_transparencyPipeline->blueAlpha  << *blueAlphaInput;
+    m_multiFramePipeline->restartAggregationOn(redAlphaInput);
+    m_multiFramePipeline->restartAggregationOn(greenAlphaInput);
+    m_multiFramePipeline->restartAggregationOn(blueAlphaInput);
 
     // Outputs
     *createOutput<gloperate::ColorRenderTarget *>("ColorOut") << *m_multiFramePipeline->canvasInterface.colorRenderTargetOutput(0);
