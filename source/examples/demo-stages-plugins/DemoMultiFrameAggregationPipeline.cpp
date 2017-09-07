@@ -16,6 +16,12 @@ DemoMultiFrameAggregationPipeline::DemoMultiFrameAggregationPipeline(gloperate::
 , m_multiFramePipeline(cppassist::make_unique<gloperate_glkernel::MultiFrameAggregationPipeline>(environment))
 , m_transparencyPipeline(cppassist::make_unique<TransparencyRenderingPipeline>(environment))
 {
+    multiFrameCount.setOption("asSpinBox", true);
+    multiFrameCount.setOption("minimumValue", 1);
+    multiFrameCount.setOption("maximumValue", 4096);
+    multiFrameCount.setOption("decimals", 0);
+    multiFrameCount.setOption("type", "int"); // HACK: Override regular typename "int32" to display property editor
+
     addStage(m_multiFramePipeline.get());
 
     m_multiFramePipeline->addStage(m_transparencyPipeline.get());
