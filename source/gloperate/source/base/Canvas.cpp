@@ -54,6 +54,7 @@ Canvas::Canvas(Environment * environment)
 , m_openGLContext(nullptr)
 , m_initialized(false)
 , m_timeDelta(0.0f)
+, m_frameCount(0)
 , m_blitStage(cppassist::make_unique<BlitStage>(environment, "FinalBlit"))
 , m_mouseDevice(cppassist::make_unique<MouseDevice>(m_environment->inputManager(), m_name))
 , m_keyboardDevice(cppassist::make_unique<KeyboardDevice>(m_environment->inputManager(), m_name))
@@ -284,6 +285,9 @@ void Canvas::render(globjects::Framebuffer * targetFBO)
             output->setRequired(true);
         });
 
+        // Reset frame count
+        m_frameCount = 0;
+
         // Replace finished
         m_replaceStage = false;
     }
@@ -355,6 +359,13 @@ void Canvas::render(globjects::Framebuffer * targetFBO)
     m_renderStage->forAllInputs<gloperate::StencilRenderTarget *>([this](Input<StencilRenderTarget *> * input) {
         input->setValue(m_stencilTarget.get());
     });
+
+    // provide & increase frame count
+    auto frameCountInput = dynamic_cast<Input<int>*>(m_renderStage->input("frameCounter"));
+    if (frameCountInput)
+    {
+        frameCountInput->setValue(m_frameCount++);
+    }
 
     // Render
     m_renderStage->process();

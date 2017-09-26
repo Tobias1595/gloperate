@@ -321,6 +321,7 @@ protected:
     gloperate::ChronoTimer                    m_clock;                  ///< Time measurement
     glm::vec4                                 m_viewport;               ///< Viewport (in real device coordinates)
     float                                     m_timeDelta;              ///< Time delta since the last update (in seconds)
+    int                                       m_frameCount;             ///< Number of frames rendered with the current stage
     std::unique_ptr<Stage>                    m_renderStage;            ///< Render stage that renders into the canvas
     std::unique_ptr<Stage>                    m_oldStage;               ///< Old render stage, will be destroyed on the next render call
     std::unique_ptr<BlitStage>                m_blitStage;              ///< Blit stage that is used to blit to target color attachment if render stage uses own targets
